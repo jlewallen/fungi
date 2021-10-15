@@ -55,8 +55,7 @@ export APP_IOS_KEYCHAIN_PASSWORD=${APP_IOS_KEYCHAIN_PASSWORD}
 					currentBuild.description = version.trim()
 				}
 				catch (Exception e) {
-					echo "failed to assign build description"
-					echo e
+					echo "failed to assign build description: " + e.toString()
 				}
 
                 // archiveArtifacts artifacts: 'platforms/ios/build/Debug-iphoneos/*.ipa, platforms/ios/build/Release-iphoneos/*.ipa'
