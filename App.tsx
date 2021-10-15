@@ -8,49 +8,81 @@
  * @format
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  FlatList,
   useColorScheme,
   View,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-import Zeroconf from 'react-native-zeroconf';
+import {Discovery} from './src/discovery';
+import moment from 'moment';
 
-const zeroconf = new Zeroconf();
+const discovery = new Discovery();
 
-console.log('hello world');
+export class Station {
+  public readonly address: string;
 
-const Section: React.FC<{
-  title: string;
-}> = ({children, title}) => {
+  constructor(
+    public readonly id: string,
+    public readonly addresses: string[],
+    public readonly port: number,
+    public readonly seen: Date | null,
+    public readonly lost: Date | null,
+  ) {
+    this.address = this.addresses[0];
+  }
+}
+
+const StationItem: React.FC<{
+  station: Station;
+}> = ({children, station}) => {
   const isDarkMode = useColorScheme() === 'dark';
+
+  const primaryColor = station.lost ? 'coral' : 'darkseagreen';
+
+  const timeSeen = moment().diff(station.seen, 'seconds');
+
   return (
-    <View style={styles.sectionContainer}>
+    <View style={styles.stationContainer}>
       <Text
         style={[
-          styles.sectionTitle,
+          styles.stationTitle,
+          {
+            backgroundColor: primaryColor,
+            color: isDarkMode ? Colors.white : Colors.black,
+          },
+        ]}>
+        {station.address}
+      </Text>
+      <Text
+        style={[
+          styles.stationId,
           {
             color: isDarkMode ? Colors.white : Colors.black,
           },
         ]}>
-        {title}
+        {station.id}
       </Text>
       <Text
         style={[
-          styles.sectionDescription,
+          styles.stationSeen,
+          {
+            color: isDarkMode ? Colors.white : Colors.black,
+          },
+        ]}>
+        Last Seen: {timeSeen} seconds ago
+      </Text>
+      <Text
+        style={[
+          styles.stationDescription,
           {
             color: isDarkMode ? Colors.light : Colors.dark,
           },
@@ -68,56 +100,50 @@ const App = () => {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
-  zeroconf.on('start', () => console.log('The scan has started.'));
-  zeroconf.on('stop', () => console.log('The scan has stopped.'));
-  zeroconf.on('found', found => console.log('Zeroconf found.', found));
-  zeroconf.on('resolved', resolved => console.log('Zeroconf found.', resolved));
-  zeroconf.on('remove', removed => console.log('Zeroconf remove.', removed));
-  zeroconf.on('update', () => console.log('Zeroconf update.'));
-  zeroconf.on('error', error => console.log('Zeroconf error.', error));
+  const [stations, setStations] = useState<Station[]>([]);
 
-  zeroconf.scan('fk', 'tcp', 'local.');
+  discovery.start(async services => {
+    const stations = services.map(
+      s => new Station(s.name, s.addresses, s.port, s.seen, s.lost),
+    );
+    console.log('stations:', stations);
+    setStations(stations);
+    return Promise.resolve();
+  });
 
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            This file has been edited, oh yeah.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <FlatList
+        style={backgroundStyle}
+        data={stations}
+        renderItem={row => <StationItem station={row.item}></StationItem>}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
+  stationContainer: {
     marginTop: 32,
     paddingHorizontal: 24,
   },
-  sectionTitle: {
+  stationTitle: {
     fontSize: 24,
     fontWeight: '600',
+    padding: 5,
   },
-  sectionDescription: {
+  stationId: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '200',
+  },
+  stationSeen: {
+    marginTop: 8,
+    fontSize: 18,
+    fontWeight: '400',
+  },
+  stationDescription: {
     marginTop: 8,
     fontSize: 18,
     fontWeight: '400',
