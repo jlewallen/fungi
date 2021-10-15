@@ -1,5 +1,8 @@
 import Zeroconf from 'react-native-zeroconf';
+
 import dgram from 'react-native-udp';
+import {Buffer} from 'buffer';
+import {fk_app} from 'fk-app-protocol/fk-app';
 
 export class Registration {
   constructor(
@@ -36,7 +39,7 @@ export class Discovery {
 
     this.zeroconf.on('resolved', resolved => {
       console.log('Zeroconf found.', resolved);
-      this.onServiceFound(resolved.name, resolved.addresses, resolved.port);
+      this.onZeroConfFound(resolved.name, resolved.addresses, resolved.port);
       callback(this.getServices());
     });
 
@@ -54,8 +57,13 @@ export class Discovery {
       socket.addMembership('224.1.2.3');
     });
 
-    socket.on('message', function (msg, rinfo) {
-      console.log('udp: message', msg, rinfo);
+    socket.on('message', (buffer, rinfo) => {
+      const addresses = [rinfo.address];
+      console.log('udp: message', buffer, addresses);
+      const decoded = fk_app.UdpMessage.decodeDelimited(buffer);
+      const deviceId = Buffer.from(decoded.deviceId).toString('hex');
+      console.log('udp: decoded', decoded);
+      this.onUdpFound(deviceId, addresses, 80);
     });
 
     setInterval(() => {
@@ -65,12 +73,22 @@ export class Discovery {
     return Promise.resolve();
   }
 
-  onServiceFound(name: string, addresses: string[], port: number) {
-    console.log('onServiceFound', name, addresses, port);
+  onUdpFound(name: string, addresses: string[], port: number) {
+    console.log('onUdpFound', name, addresses, port);
+    if (!this.services[name]) {
+      this.services[name] = new Registration(name, addresses, port);
+    }
+    this.services[name].udp = new Date();
+    this.services[name].lost = null;
+  }
+
+  onZeroConfFound(name: string, addresses: string[], port: number) {
+    console.log('onZeroConfFound', name, addresses, port);
     if (!this.services[name]) {
       this.services[name] = new Registration(name, addresses, port);
     }
     this.services[name].zeroconf = new Date();
+    this.services[name].lost = null;
   }
 
   onServiceLost(name: string) {

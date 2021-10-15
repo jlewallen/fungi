@@ -34,7 +34,8 @@ export class Station {
     public readonly id: string,
     public readonly addresses: string[],
     public readonly port: number,
-    public readonly seen: Date | null,
+    public readonly zeroconf: Date | null,
+    public readonly udp: Date | null,
     public readonly lost: Date | null,
   ) {
     this.address = this.addresses[0];
@@ -48,38 +49,82 @@ const StationItem: React.FC<{
 
   const primaryColor = station.lost ? 'coral' : 'darkseagreen';
 
-  const timeSeen = moment().diff(station.seen, 'seconds');
+  const renderAge = (value: Date | null): string => {
+    if (!value) {
+      return 'Never';
+    }
+    return moment().diff(value, 'seconds') + ' seconds ago';
+  };
 
-  return (
-    <View style={styles.stationContainer}>
+  const sections = [];
+
+  sections.push(
+    <Text
+      key={sections.length}
+      style={[
+        styles.stationTitle,
+        {
+          backgroundColor: primaryColor,
+          color: isDarkMode ? Colors.white : Colors.black,
+        },
+      ]}>
+      {station.address}
+    </Text>,
+  );
+  if (station.lost) {
+    sections.push(
       <Text
-        style={[
-          styles.stationTitle,
-          {
-            backgroundColor: primaryColor,
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {station.address}
-      </Text>
-      <Text
-        style={[
-          styles.stationId,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {station.id}
-      </Text>
-      <Text
+        key={sections.length}
         style={[
           styles.stationSeen,
           {
             color: isDarkMode ? Colors.white : Colors.black,
           },
         ]}>
-        Last Seen: {timeSeen} seconds ago
-      </Text>
+        LOST: {renderAge(station.lost)}
+      </Text>,
+    );
+  }
+  sections.push(
+    <Text
+      key={sections.length}
+      style={[
+        styles.stationId,
+        {
+          color: isDarkMode ? Colors.white : Colors.black,
+        },
+      ]}>
+      {station.id}
+    </Text>,
+  );
+  sections.push(
+    <Text
+      key={sections.length}
+      style={[
+        styles.stationSeen,
+        {
+          color: isDarkMode ? Colors.white : Colors.black,
+        },
+      ]}>
+      ZeroConf: {renderAge(station.zeroconf)}
+    </Text>,
+  );
+  sections.push(
+    <Text
+      key={sections.length}
+      style={[
+        styles.stationSeen,
+        {
+          color: isDarkMode ? Colors.white : Colors.black,
+        },
+      ]}>
+      UDP: {renderAge(station.udp)}
+    </Text>,
+  );
+
+  return (
+    <View style={styles.stationContainer}>
+      {sections}
       <Text
         style={[
           styles.stationDescription,
@@ -104,7 +149,7 @@ const App = () => {
 
   discovery.start(async services => {
     const stations = services.map(
-      s => new Station(s.name, s.addresses, s.port, s.seen, s.lost),
+      s => new Station(s.name, s.addresses, s.port, s.zeroconf, s.udp, s.lost),
     );
     console.log('stations:', stations);
     setStations(stations);
