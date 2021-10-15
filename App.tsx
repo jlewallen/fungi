@@ -27,6 +27,12 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
+import Zeroconf from 'react-native-zeroconf';
+
+const zeroconf = new Zeroconf();
+
+console.log('hello world');
+
 const Section: React.FC<{
   title: string;
 }> = ({children, title}) => {
@@ -61,6 +67,16 @@ const App = () => {
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
+
+  zeroconf.on('start', () => console.log('The scan has started.'));
+  zeroconf.on('stop', () => console.log('The scan has stopped.'));
+  zeroconf.on('found', found => console.log('Zeroconf found.', found));
+  zeroconf.on('resolved', resolved => console.log('Zeroconf found.', resolved));
+  zeroconf.on('remove', removed => console.log('Zeroconf remove.', removed));
+  zeroconf.on('update', () => console.log('Zeroconf update.'));
+  zeroconf.on('error', error => console.log('Zeroconf error.', error));
+
+  zeroconf.scan('fk', 'tcp', 'local.');
 
   return (
     <SafeAreaView style={backgroundStyle}>
