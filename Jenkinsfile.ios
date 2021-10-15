@@ -1,0 +1,69 @@
+@Library('conservify') _
+
+properties([
+	disableConcurrentBuilds(),
+	buildDiscarder(logRotator(numToKeepStr: '5'))
+])
+
+def getBranch(scmInfo) {
+	def (remoteOrBranch, branch) = scmInfo.GIT_BRANCH.tokenize('/')
+	if (branch) {
+		return branch;
+	}
+	return remoteOrBranch;
+}
+
+timestamps {
+    node ("osx") {
+        try {
+			def scmInfo
+
+            stage ('git') {
+                scmInfo = checkout scm
+            }
+
+            stage ("configuration") {
+                withCredentials([file(credentialsId: 'app-mapbox-netrc', variable: 'APP_MAPBOX_NETRC')]) {
+					sh "cp -f $APP_MAPBOX_NETRC ~/.netrc"
+				}
+                withCredentials([file(credentialsId: 'app-ios-google-services', variable: 'APP_IOS_GOOGLE_SERVICES')]) {
+                    sh "cp -f $APP_IOS_GOOGLE_SERVICES App_Resources/iOS"
+				}
+            }
+
+			stage ('build') {
+				def branch = getBranch(scmInfo)
+				def buildType = "beta"
+				if (branch == "main") {
+					buildType = "release"
+				}
+
+				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
+					withCredentials([string(credentialsId: 'app-ios-keychain-password', variable: 'APP_IOS_KEYCHAIN_PASSWORD')]) {
+						sh """
+export PATH=$PATH:$HOME/tools/node/bin:node_modules/.bin
+set +x
+export APP_IOS_KEYCHAIN_PASSWORD=${APP_IOS_KEYCHAIN_PASSWORD}
+"""
+					}
+				}
+			}
+
+            stage ('archive') {
+				def version = readFile('version.txt')
+
+				currentBuild.description = version.trim()
+
+                // archiveArtifacts artifacts: 'platforms/ios/build/Debug-iphoneos/*.ipa, platforms/ios/build/Release-iphoneos/*.ipa'
+            }
+
+			refreshDistribution()
+
+            notifySuccess()
+        }
+        catch (Exception e) {
+            notifyFailure()
+            throw e;
+        }
+    }
+}

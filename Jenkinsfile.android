@@ -1,0 +1,82 @@
+@Library('conservify') _
+
+properties([
+	disableConcurrentBuilds(),
+	buildDiscarder(logRotator(numToKeepStr: '5'))
+])
+
+def getBranch(scmInfo) {
+	def (remoteOrBranch, branch) = scmInfo.GIT_BRANCH.tokenize('/')
+	if (branch) {
+		return branch;
+	}
+	return remoteOrBranch;
+}
+
+timestamps {
+    node ("jenkins-aws-ubuntu") {
+        try {
+			def scmInfo
+
+            stage ('git') {
+                scmInfo = checkout scm
+            }
+
+			stage ("prepare-server") {
+				build job: "fk/oss/fancycamera"
+				build job: "fk/oss/keyboard-height-provider"
+			}
+
+			stage ("android-sdk") {
+				sh "rm -f android-sdk-setup.sh*"
+				sh "wget https://raw.githubusercontent.com/conservify/dev-ops/main/android-sdk/android-sdk-setup.sh"
+				sh "bash android-sdk-setup.sh"
+			}
+
+            stage ("configuration") {
+                withCredentials([file(credentialsId: 'app-mapbox-netrc', variable: 'APP_MAPBOX_NETRC')]) {
+					sh "cp -f $APP_MAPBOX_NETRC ~/.netrc"
+				}
+                withCredentials([file(credentialsId: 'app-android-signing-data', variable: 'APP_ANDROID_SIGNING_DATA')]) {
+                    sh "mkdir -p private && cp -f $APP_ANDROID_SIGNING_DATA private/private.zip && (cd private && unzip -o private.zip)"
+                }
+                withCredentials([file(credentialsId: 'app-android-google-services', variable: 'APP_ANDROID_GOOGLE_SERVICES')]) {
+                    sh "cp -f $APP_ANDROID_GOOGLE_SERVICES App_Resources/Android"
+				}
+            }
+
+            stage ('build') {
+				def branch = getBranch(scmInfo)
+				def buildType = "beta"
+				if (branch == "main") {
+					buildType = "release"
+				}
+
+                def props = readProperties(file: "private/gradle.properties")
+
+				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
+					sh """
+export PATH=$PATH:node_modules/.bin
+export ANDROID_HOME=`pwd`/android-sdk
+"""
+				}
+            }
+
+            stage ('archive') {
+				def version = readFile('version.txt')
+
+				currentBuild.description = version.trim()
+
+                // archiveArtifacts artifacts: 'platforms/android/app/build/outputs/apk/*/*.apk, platforms/android/app/build/outputs/bundle/*/*.aab'
+            }
+
+			refreshDistribution()
+
+            notifySuccess()
+        }
+        catch (Exception e) {
+            notifyFailure()
+            throw e;
+        }
+    }
+}
