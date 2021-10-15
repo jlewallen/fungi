@@ -36,7 +36,7 @@ timestamps {
                     sh "mkdir -p private && cp -f $APP_ANDROID_SIGNING_DATA private/private.zip && (cd private && unzip -o private.zip)"
                 }
                 withCredentials([file(credentialsId: 'app-android-google-services', variable: 'APP_ANDROID_GOOGLE_SERVICES')]) {
-                    sh "cp -f $APP_ANDROID_GOOGLE_SERVICES App_Resources/Android"
+                    // sh "cp -f $APP_ANDROID_GOOGLE_SERVICES App_Resources/Android"
 				}
             }
 
