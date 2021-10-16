@@ -38,7 +38,7 @@ export class Registration {
 }
 
 export class PersistedStation {
-    constructor(private readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
+    constructor(public readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
 }
 
 type ResponseType = {};

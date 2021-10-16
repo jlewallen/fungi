@@ -21,6 +21,30 @@ import { Discovery, PersistedStation, Registration } from "./src/discovery";
 
 const discovery = new Discovery();
 
+const StationInspection: React.FC<{ station: PersistedStation }> = ({ children, station }) => {
+    return (
+        <View style={{ paddingHorizontal: 24 }}>
+            <Text>Name: {station.reply.status?.identity?.name}</Text>
+            <Text>Uptime: {station.reply.status?.uptime}</Text>
+            <Text>Firmware: {station.reply.status?.firmware?.version}</Text>
+            <Text>Battery: {station.reply.status?.power?.battery?.voltage}</Text>
+            <Text>Solar: {station.reply.status?.power?.solar?.voltage}</Text>
+            <Text>GPS: {station.reply.status?.gps?.fix}</Text>
+            <Text>Latitude: {station.reply.status?.gps?.latitude}</Text>
+            <Text>Longitude: {station.reply.status?.gps?.longitude}</Text>
+            {station.reply.streams.map((stream) => {
+                return (
+                    <View key={stream.name}>
+                        <Text>
+                            {stream.name}: {stream.block} blocks, {stream.size} bytes
+                        </Text>
+                    </View>
+                );
+            })}
+        </View>
+    );
+};
+
 const RegistrationDetails: React.FC<{
     registration: Registration;
     showHeader: boolean;
@@ -151,6 +175,7 @@ const StationDetailScreen = ({ route, navigation }) => {
     React.useEffect(() => {
         const refreshStation = (station: PersistedStation) => {
             console.log("station-detail-station", station);
+            console.log("station-detail-station", station.reply.status);
             setStation(station);
         };
         const refreshRegistration = (registration: Registration) => {
@@ -180,7 +205,7 @@ const StationDetailScreen = ({ route, navigation }) => {
         <View>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
             <RegistrationDetails registration={registration} showHeader={false} onPress={console.log} />
-            <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}></HStack>
+            {station && <StationInspection station={station} />}
         </View>
     );
 };
@@ -275,7 +300,7 @@ const App = () => {
 
 const styles = StyleSheet.create({
     stationContainer: {
-        marginTop: 32,
+        marginTop: 10,
         paddingHorizontal: 24,
     },
     stationTitle: {
