@@ -47,6 +47,12 @@
   },
   "jest": {
     "preset": "react-native",
+    "setupFiles": [
+      "<rootDir>/__tests__/setup.tsx"
+    ],
+    "modulePathIgnorePatterns": [
+      "setup.tsx"
+    ],
     "moduleFileExtensions": [
       "ts",
       "tsx",
