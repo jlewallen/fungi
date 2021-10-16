@@ -22,6 +22,7 @@ type CallbackFunc = (registrations: Registration[]) => Promise<void>;
 
 export class Discovery {
   private readonly services: {[index: string]: Registration} = {};
+  private callback: CallbackFunc = async () => {};
   private zeroconf: Zeroconf = null;
 
   async start(callback: CallbackFunc): Promise<void> {
@@ -29,6 +30,7 @@ export class Discovery {
       return;
     }
 
+    this.callback = callback;
     this.zeroconf = new Zeroconf();
 
     this.zeroconf.on('start', () => console.log('Zeroconf scan has started.'));
@@ -38,7 +40,7 @@ export class Discovery {
     );
     this.zeroconf.on('update', () => {
       // console.log('Zeroconf update.');
-      callback(this.getServices());
+      this.refresh();
     });
     this.zeroconf.on('error', (error: string) =>
       console.log('Zeroconf error.', error),
@@ -49,14 +51,14 @@ export class Discovery {
       (resolved: {name: string; addresses: string[]; port: number}) => {
         console.log('Zeroconf found.', resolved);
         this.onZeroConfFound(resolved.name, resolved.addresses, resolved.port);
-        callback(this.getServices());
+        this.refresh();
       },
     );
 
     this.zeroconf.on('remove', (removed: string) => {
       console.log('Zeroconf remove.', removed);
       this.onServiceLost(removed);
-      callback(this.getServices());
+      this.refresh();
     });
 
     this.zeroconf.scan('fk', 'tcp', 'local.');
@@ -76,16 +78,20 @@ export class Discovery {
       this.onUdpFound(deviceId, addresses, 80);
     });
 
-    const refresh = () => {
+    const periodicRefresh = () => {
       setTimeout(() => {
-        callback(this.getServices());
-        refresh();
+        this.refresh();
+        periodicRefresh();
       }, 1000);
     };
 
-    refresh();
+    periodicRefresh();
 
     return Promise.resolve();
+  }
+
+  refresh() {
+    this.callback(this.getServices());
   }
 
   onUdpFound(name: string, addresses: string[], port: number) {
@@ -134,6 +140,8 @@ export class Discovery {
 
     service.queried = new Date();
 
+    this.refresh();
+
     await RNFetchBlob.fetch('GET', url)
       .then((res: ResponseType) => {
         service.replied = new Date();
@@ -149,6 +157,8 @@ export class Discovery {
       .catch((errorMessage: string, statusCode: number) => {
         console.log(`query-error-`, statusCode, errorMessage);
       });
+
+    this.refresh();
 
     return Promise.resolve();
   }
