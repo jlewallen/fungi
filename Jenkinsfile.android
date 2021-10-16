@@ -53,10 +53,8 @@ timestamps {
 					sh """
 set -e
 
-export PATH=$PATH:node_modules/.bin
+export PATH=$PATH:node_modules/.bin:/usr/local/node/bin
 export ANDROID_HOME=`pwd`/android-sdk
-
-npm install -g yarn
 
 yarn install
 
