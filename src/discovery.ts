@@ -9,7 +9,7 @@ export class Registration {
     public readonly address: string;
 
     constructor(
-        public readonly name: string,
+        public readonly deviceId: string,
         public readonly addresses: string[],
         public readonly port: number,
         public zeroconf: Date | null = null,
@@ -21,8 +21,6 @@ export class Registration {
         this.address = this.addresses[0];
     }
 }
-
-type CallbackFunc = (registrations: Registration[]) => Promise<void>;
 
 export class PersistedStation {
     constructor(private readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
@@ -98,30 +96,30 @@ export class Discovery extends Emitter {
         }
     }
 
-    private onUdpFound(name: string, addresses: string[], port: number) {
-        console.log("onUdpFound", name, addresses, port);
-        if (!this.services[name]) {
-            this.services[name] = new Registration(name, addresses, port);
+    private onUdpFound(deviceId: string, addresses: string[], port: number) {
+        console.log("onUdpFound", deviceId, addresses, port);
+        if (!this.services[deviceId]) {
+            this.services[deviceId] = new Registration(deviceId, addresses, port);
         }
-        this.services[name].udp = new Date();
-        this.services[name].lost = null;
+        this.services[deviceId].udp = new Date();
+        this.services[deviceId].lost = null;
     }
 
-    private onZeroConfFound(name: string, addresses: string[], port: number) {
-        console.log("onZeroConfFound", name, addresses, port);
-        if (!this.services[name]) {
-            this.services[name] = new Registration(name, addresses, port);
+    private onZeroConfFound(deviceId: string, addresses: string[], port: number) {
+        console.log("onZeroConfFound", deviceId, addresses, port);
+        if (!this.services[deviceId]) {
+            this.services[deviceId] = new Registration(deviceId, addresses, port);
         }
-        this.services[name].zeroconf = new Date();
-        this.services[name].lost = null;
+        this.services[deviceId].zeroconf = new Date();
+        this.services[deviceId].lost = null;
     }
 
-    private onServiceLost(name: string) {
-        if (this.services[name]) {
-            console.log("onServiceLost", name);
-            this.services[name].lost = new Date();
+    private onServiceLost(deviceId: string) {
+        if (this.services[deviceId]) {
+            console.log("onServiceLost", deviceId);
+            this.services[deviceId].lost = new Date();
         } else {
-            console.log("onServiceLost (MYSTERY)", name);
+            console.log("onServiceLost (MYSTERY)", deviceId);
         }
     }
 
@@ -129,22 +127,22 @@ export class Discovery extends Emitter {
         return Object.values(this.services);
     }
 
-    async query(name: string): Promise<void> {
-        const service = this.services[name];
+    async query(deviceId: string): Promise<void> {
+        const service = this.services[deviceId];
         if (!service) {
-            console.log("querying (MYSTERY)", name);
+            console.log("querying (MYSTERY)", deviceId);
             return Promise.resolve();
         }
 
         console.log("query-service", service);
 
-        const url = `http://${service.addresses[0]}:${service.port}/fk/v1`;
+        const url = `http://${service.address}:${service.port}/fk/v1`;
 
         console.log("query-url", url);
 
         service.queried = new Date();
 
-        this.refresh(name);
+        this.refresh(deviceId);
 
         await RNFetchBlob.fetch("GET", url)
             .then((res: ResponseType) => {
@@ -157,14 +155,14 @@ export class Discovery extends Emitter {
                     const decoded = AppProto.HttpReply.decodeDelimited(buffer);
                     console.log("query-decoded", decoded);
 
-                    this.stations[name] = new PersistedStation(decoded, service);
+                    this.stations[deviceId] = new PersistedStation(decoded, service);
                 }
             })
             .catch((errorMessage: string, statusCode: number) => {
                 console.log(`query-error-`, statusCode, errorMessage);
             });
 
-        this.refresh(name);
+        this.refresh(deviceId);
 
         return Promise.resolve();
     }

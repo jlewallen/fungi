@@ -97,7 +97,7 @@ const RegistrationDetails: React.FC<{
                 },
             ]}
         >
-            {registration.name}
+            {registration.deviceId}
         </Text>
     );
 
@@ -108,7 +108,7 @@ const RegistrationDetails: React.FC<{
 
     sections.push(
         <View style={styles.buttonContainerStyle} key={sections.length}>
-            <Button title="Query" onPress={() => discovery.query(registration.name)} />
+            <Button title="Query" onPress={() => discovery.query(registration.deviceId)} />
         </View>
     );
 
@@ -146,7 +146,7 @@ const StationDetailScreen = ({ route, navigation }) => {
         const handler = (station: PersistedStation) => {
             console.log("station-detail-station", station);
         };
-        const key = `stations/${stationNavigation.id}`;
+        const key = `stations/${stationNavigation.deviceId}`;
         discovery.on(key, handler);
         return function cleanupListener() {
             discovery.off(key, handler);
@@ -157,7 +157,7 @@ const StationDetailScreen = ({ route, navigation }) => {
         <View style={{ margin: 20 }}>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
             <View style={styles.buttonContainerStyle}>
-                <Button title="Query" onPress={() => discovery.query(stationNavigation.id)} />
+                <Button title="Query" onPress={() => discovery.query(stationNavigation.deviceId)} />
             </View>
             <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}></HStack>
         </View>
@@ -165,10 +165,10 @@ const StationDetailScreen = ({ route, navigation }) => {
 };
 
 class StationNavigation {
-    constructor(public readonly id: string, public readonly name: string) {}
+    constructor(public readonly deviceId: string, public readonly name: string) {}
 
     public static fromRegistration(registration: Registration): StationNavigation {
-        return new StationNavigation(registration.name, registration.address);
+        return new StationNavigation(registration.deviceId, registration.address);
     }
 }
 
@@ -217,7 +217,7 @@ const StationListingScreen = ({ navigation }) => {
             <FlatList
                 style={backgroundStyle}
                 data={registrations}
-                keyExtractor={(item) => item.name}
+                keyExtractor={(item) => item.deviceId}
                 renderItem={(row) => <RegistrationDetails onPress={onSelected} registration={row.item}></RegistrationDetails>}
             />
         </View>
