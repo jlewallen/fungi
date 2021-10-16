@@ -116,15 +116,20 @@ const StationItem: React.FC<{
       {station.id}
     </Text>,
   );
+
   pushAgeSection('ZeroConf', station.zeroconf);
   pushAgeSection('UDP', station.udp);
   pushAgeSection('Queried', station.queried);
   pushAgeSection('Reply', station.replied);
+
+  const buttonContainerStyle = {
+    marginTop: 10,
+  };
+
   sections.push(
-    <Button
-      key={sections.length}
-      title="Query"
-      onPress={() => discovery.query(station.id)}></Button>,
+    <View style={buttonContainerStyle} key={sections.length}>
+      <Button title="Query" onPress={() => discovery.query(station.id)} />
+    </View>,
   );
 
   return (
@@ -229,7 +234,7 @@ const styles = StyleSheet.create({
   },
   stationSeen: {
     marginTop: 8,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '400',
   },
   stationDescription: {
