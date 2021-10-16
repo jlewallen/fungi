@@ -66,9 +66,14 @@ export class Discovery {
       this.onUdpFound(deviceId, addresses, 80);
     });
 
-    setInterval(() => {
-      callback(this.getServices());
-    }, 1000);
+    const refresh = () => {
+      setTimeout(() => {
+        callback(this.getServices());
+        refresh();
+      }, 1000);
+    };
+
+    refresh();
 
     return Promise.resolve();
   }
