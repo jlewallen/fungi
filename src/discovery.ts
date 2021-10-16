@@ -6,6 +6,8 @@ import { Buffer } from "buffer";
 import { fk_app as AppProto } from "fk-app-protocol/fk-app";
 
 export class Registration {
+    public readonly address: string;
+
     constructor(
         public readonly name: string,
         public readonly addresses: string[],
@@ -15,13 +17,20 @@ export class Registration {
         public lost: Date | null = null,
         public queried: Date | null = null,
         public replied: Date | null = null
-    ) {}
+    ) {
+        this.address = this.addresses[0];
+    }
 }
 
 type CallbackFunc = (registrations: Registration[]) => Promise<void>;
 
+export class PersistedStation {
+    constructor(private readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
+}
+
 export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
+    private readonly stations: { [index: string]: PersistedStation } = {};
     private zeroconf: Zeroconf = null;
 
     async start(): Promise<void> {
@@ -81,11 +90,15 @@ export class Discovery extends Emitter {
         return Promise.resolve();
     }
 
-    refresh() {
-        this.emit("stations", this.getServices());
+    private refresh(id: string | null = null) {
+        this.emit(`registrations`, this.getRegistrations());
+        if (id) {
+            const station = this.stations[id];
+            this.emit(`stations/${id}`, station);
+        }
     }
 
-    onUdpFound(name: string, addresses: string[], port: number) {
+    private onUdpFound(name: string, addresses: string[], port: number) {
         console.log("onUdpFound", name, addresses, port);
         if (!this.services[name]) {
             this.services[name] = new Registration(name, addresses, port);
@@ -94,7 +107,7 @@ export class Discovery extends Emitter {
         this.services[name].lost = null;
     }
 
-    onZeroConfFound(name: string, addresses: string[], port: number) {
+    private onZeroConfFound(name: string, addresses: string[], port: number) {
         console.log("onZeroConfFound", name, addresses, port);
         if (!this.services[name]) {
             this.services[name] = new Registration(name, addresses, port);
@@ -103,7 +116,7 @@ export class Discovery extends Emitter {
         this.services[name].lost = null;
     }
 
-    onServiceLost(name: string) {
+    private onServiceLost(name: string) {
         if (this.services[name]) {
             console.log("onServiceLost", name);
             this.services[name].lost = new Date();
@@ -112,7 +125,7 @@ export class Discovery extends Emitter {
         }
     }
 
-    getServices(): Registration[] {
+    private getRegistrations(): Registration[] {
         return Object.values(this.services);
     }
 
@@ -131,7 +144,7 @@ export class Discovery extends Emitter {
 
         service.queried = new Date();
 
-        this.refresh();
+        this.refresh(name);
 
         await RNFetchBlob.fetch("GET", url)
             .then((res: ResponseType) => {
@@ -143,13 +156,15 @@ export class Discovery extends Emitter {
                     const buffer = Buffer.from(base64Str, "base64");
                     const decoded = AppProto.HttpReply.decodeDelimited(buffer);
                     console.log("query-decoded", decoded);
+
+                    this.stations[name] = new PersistedStation(decoded, service);
                 }
             })
             .catch((errorMessage: string, statusCode: number) => {
                 console.log(`query-error-`, statusCode, errorMessage);
             });
 
-        this.refresh();
+        this.refresh(name);
 
         return Promise.resolve();
     }

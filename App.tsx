@@ -8,43 +8,26 @@
  * @format
  */
 
+import moment from "moment";
+
 import React, { useState } from "react";
 import { SafeAreaView, Switch, Button, StatusBar, StyleSheet, Text, FlatList, useColorScheme, View } from "react-native";
 import { HStack, Checkbox, Center, NativeBaseProvider, Box } from "native-base";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
-import { Discovery } from "./src/discovery";
-import moment from "moment";
-import { TinyEmitter } from "tiny-emitter";
+import { Discovery, PersistedStation, Registration } from "./src/discovery";
 
 const discovery = new Discovery();
 
-export class Station {
-    public readonly address: string;
-
-    constructor(
-        public readonly id: string,
-        public readonly addresses: string[],
-        public readonly port: number,
-        public readonly zeroconf: Date | null,
-        public readonly udp: Date | null,
-        public readonly lost: Date | null,
-        public readonly queried: Date | null,
-        public readonly replied: Date | null
-    ) {
-        this.address = this.addresses[0];
-    }
-}
-
-const StationItem: React.FC<{
-    station: Station;
-}> = ({ children, station }) => {
+const RegistrationDetails: React.FC<{
+    registration: Registration;
+    onPress: (registration: Registration) => void;
+}> = ({ children, registration, onPress }) => {
     const isDarkMode = useColorScheme() === "dark";
 
-    const primaryColor = station.lost ? "coral" : "darkseagreen";
+    const primaryColor = registration.lost ? "coral" : "darkseagreen";
 
     const renderAge = (value: Date | null): string => {
         if (!value) {
@@ -77,6 +60,7 @@ const StationItem: React.FC<{
     sections.push(
         <Text
             key={sections.length}
+            onPress={() => onPress(registration)}
             style={[
                 styles.stationTitle,
                 {
@@ -85,10 +69,10 @@ const StationItem: React.FC<{
                 },
             ]}
         >
-            {station.address}
+            {registration.address}
         </Text>
     );
-    if (station.lost) {
+    if (registration.lost) {
         sections.push(
             <Text
                 key={sections.length}
@@ -99,7 +83,7 @@ const StationItem: React.FC<{
                     },
                 ]}
             >
-                LOST: {renderAge(station.lost)}
+                LOST: {renderAge(registration.lost)}
             </Text>
         );
     }
@@ -113,22 +97,18 @@ const StationItem: React.FC<{
                 },
             ]}
         >
-            {station.id}
+            {registration.name}
         </Text>
     );
 
-    pushAgeSection("ZeroConf", station.zeroconf);
-    pushAgeSection("UDP", station.udp);
-    pushAgeSection("Queried", station.queried);
-    pushAgeSection("Reply", station.replied);
-
-    const buttonContainerStyle = {
-        marginTop: 10,
-    };
+    pushAgeSection("ZeroConf", registration.zeroconf);
+    pushAgeSection("UDP", registration.udp);
+    pushAgeSection("Queried", registration.queried);
+    pushAgeSection("Reply", registration.replied);
 
     sections.push(
-        <View style={buttonContainerStyle} key={sections.length}>
-            <Button title="Query" onPress={() => discovery.query(station.id)} />
+        <View style={styles.buttonContainerStyle} key={sections.length}>
+            <Button title="Query" onPress={() => discovery.query(registration.name)} />
         </View>
     );
 
@@ -151,39 +131,74 @@ const StationItem: React.FC<{
 
 const Stack = createNativeStackNavigator();
 
-const StationDetailScreen = ({ navigation }) => {
-    return (
-        <View>
-            <Text>Station Detail</Text>
-        </View>
-    );
-};
-
-const StationListingScreen = ({ navigation }) => {
+const StationDetailScreen = ({ route, navigation }) => {
     const isDarkMode = useColorScheme() === "dark";
-
-    const [isPassive, setIsPassive] = useState<boolean>(true);
-    const [stations, setStations] = useState<Station[]>([]);
-
-    const togglePassive = () => {
-        setIsPassive(!isPassive);
-    };
 
     const backgroundStyle = {
         backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
     };
 
-    React.useEffect(function setupListener() {
-        const handler = (services) => {
-            const stations = services.map((s) => new Station(s.name, s.addresses, s.port, s.zeroconf, s.udp, s.lost, s.queried, s.replied));
-            console.log("stations:", stations);
-            setStations(stations);
+    const stationNavigation: StationNavigation = route.params.station;
+
+    console.log("station-detail-navigation", stationNavigation);
+
+    React.useEffect(() => {
+        const handler = (station: PersistedStation) => {
+            console.log("station-detail-station", station);
         };
-        discovery.on("stations", handler);
+        const key = `stations/${stationNavigation.id}`;
+        discovery.on(key, handler);
         return function cleanupListener() {
-            discovery.off("stations", handler);
+            discovery.off(key, handler);
         };
     });
+
+    return (
+        <View style={{ margin: 20 }}>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+            <View style={styles.buttonContainerStyle}>
+                <Button title="Query" onPress={() => discovery.query(stationNavigation.id)} />
+            </View>
+            <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}></HStack>
+        </View>
+    );
+};
+
+class StationNavigation {
+    constructor(public readonly id: string, public readonly name: string) {}
+
+    public static fromRegistration(registration: Registration): StationNavigation {
+        return new StationNavigation(registration.name, registration.address);
+    }
+}
+
+const StationListingScreen = ({ navigation }) => {
+    const isDarkMode = useColorScheme() === "dark";
+
+    const backgroundStyle = {
+        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    };
+
+    const [isPassive, setIsPassive] = useState<boolean>(true);
+    const [registrations, setRegistrations] = useState<Registration[]>([]);
+
+    const togglePassive = () => {
+        setIsPassive(!isPassive);
+    };
+
+    React.useEffect(() => {
+        const handler = (registrations: Registration[]) => {
+            setRegistrations(registrations);
+        };
+        discovery.on("registrations", handler);
+        return function cleanupListener() {
+            discovery.off("registrations", handler);
+        };
+    });
+
+    const onSelected = (registration: Registration) => {
+        navigation.navigate("StationDetail", { station: StationNavigation.fromRegistration(registration) });
+    };
 
     return (
         <View>
@@ -201,9 +216,9 @@ const StationListingScreen = ({ navigation }) => {
             </HStack>
             <FlatList
                 style={backgroundStyle}
-                data={stations}
-                keyExtractor={(item) => item.id}
-                renderItem={(row) => <StationItem station={row.item}></StationItem>}
+                data={registrations}
+                keyExtractor={(item) => item.name}
+                renderItem={(row) => <RegistrationDetails onPress={onSelected} registration={row.item}></RegistrationDetails>}
             />
         </View>
     );
@@ -225,7 +240,11 @@ const App = () => {
                 <SafeAreaView style={containerStyle}>
                     <Stack.Navigator>
                         <Stack.Screen name="Stations" component={StationListingScreen} options={{ title: "Stations" }} />
-                        <Stack.Screen name="Station Detail" component={StationDetailScreen} options={{}} />
+                        <Stack.Screen
+                            name="StationDetail"
+                            component={StationDetailScreen}
+                            options={({ route }) => ({ title: route.params.station.name })}
+                        />
                     </Stack.Navigator>
                 </SafeAreaView>
             </NativeBaseProvider>
@@ -260,6 +279,9 @@ const styles = StyleSheet.create({
     },
     highlight: {
         fontWeight: "700",
+    },
+    buttonContainerStyle: {
+        marginTop: 10,
     },
 });
 
