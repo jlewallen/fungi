@@ -1,6 +1,6 @@
 import Emitter from "tiny-emitter";
 import Zeroconf from "react-native-zeroconf";
-import RNFetchBlob from "react-native-fetch-blob";
+import RNFetchBlob from "react-native-blob-util";
 import dgram from "react-native-udp";
 import { Buffer } from "buffer";
 import { fk_app as AppProto } from "fk-app-protocol/fk-app";
