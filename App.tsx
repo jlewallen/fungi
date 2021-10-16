@@ -63,6 +63,9 @@ const StationItem: React.FC<{
   const sections = [];
 
   const pushAgeSection = (label: string, value: Date | null) => {
+    if (!value) {
+      return;
+    }
     sections.push(
       <Text
         key={sections.length}
