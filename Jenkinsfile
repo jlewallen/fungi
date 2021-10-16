@@ -18,7 +18,7 @@ timestamps {
 				def (remote, branch) = scm.GIT_BRANCH.tokenize('/')
 
 				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
-					# sh "PATH=$PATH:node_modules/.bin:/usr/local/node/bin npm run test"
+                    sh "PATH=$PATH:node_modules/.bin:/usr/local/node/bin npm run test"
 				}
             }
 
