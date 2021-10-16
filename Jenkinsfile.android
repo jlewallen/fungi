@@ -51,8 +51,12 @@ timestamps {
 
 				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
 					sh """
+set -e
+
 export PATH=$PATH:node_modules/.bin
 export ANDROID_HOME=`pwd`/android-sdk
+
+yarn install
 
 cd android && ./gradlew bundleRelease
 """
