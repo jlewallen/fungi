@@ -25,6 +25,7 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 import {Discovery} from './src/discovery';
 import moment from 'moment';
+import {fontWeight} from 'styled-system';
 
 const discovery = new Discovery();
 
@@ -142,6 +143,11 @@ const StationItem: React.FC<{
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
+  const containerStyle = {
+    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    flex: 1,
+  };
+
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
@@ -164,7 +170,7 @@ const App = () => {
 
   return (
     <NativeBaseProvider>
-      <SafeAreaView style={backgroundStyle}>
+      <SafeAreaView style={containerStyle}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <HStack
           space={6}
@@ -173,14 +179,14 @@ const App = () => {
           marginRight={5}
           style={backgroundStyle}>
           <Switch
+            accessibilityLabel="Passive networking mode."
             trackColor={{false: '#767577', true: '#81b0ff'}}
             thumbColor={isPassive ? '#f5dd4b' : '#f4f3f4'}
-            accessibilityLabel="Passive networking mode."
             ios_backgroundColor="#3e3e3e"
             onValueChange={togglePassive}
             value={isPassive}
           />
-          <Text>Passive Networking</Text>
+          <Text style={{fontWeight: '800'}}>Passive Networking</Text>
         </HStack>
         <FlatList
           style={backgroundStyle}
