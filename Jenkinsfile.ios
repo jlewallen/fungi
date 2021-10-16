@@ -41,9 +41,15 @@ timestamps {
 				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
 					withCredentials([string(credentialsId: 'app-ios-keychain-password', variable: 'APP_IOS_KEYCHAIN_PASSWORD')]) {
 						sh """
+set -e
+
 export PATH=$PATH:$HOME/tools/node/bin:node_modules/.bin
 set +x
 export APP_IOS_KEYCHAIN_PASSWORD=${APP_IOS_KEYCHAIN_PASSWORD}
+
+yarn install
+
+cd ios && pod install
 """
 					}
 				}
