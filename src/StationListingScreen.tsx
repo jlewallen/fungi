@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Switch, StatusBar, StyleSheet, Text, FlatList, useColorScheme, View } from "react-native";
-import { HStack } from "native-base";
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
 import { Discovery } from "./discovery";
@@ -40,7 +39,7 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
     return (
         <View>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-            <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}>
+            <View marginTop={5} marginLeft={5} marginRight={5} style={{ flexDirection: "row", ...backgroundStyle }}>
                 <Switch
                     accessibilityLabel="Query Stations."
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
@@ -50,7 +49,7 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
                     value={!isPassive}
                 />
                 <Text style={{ fontWeight: "800" }}>Query Stations ({isPassive ? "No" : "Yes"})</Text>
-            </HStack>
+            </View>
             <FlatList
                 style={backgroundStyle}
                 data={registrations}

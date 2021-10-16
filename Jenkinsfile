@@ -14,11 +14,11 @@ timestamps {
                 scm = checkout scm
             }
 
-            stage ('build') {
+            stage ('tests') {
 				def (remote, branch) = scm.GIT_BRANCH.tokenize('/')
 
 				withEnv(["GIT_LOCAL_BRANCH=${branch}"]) {
-					# sh "PATH=$PATH:node_modules/.bin make jenkins"
+					# sh "PATH=$PATH:node_modules/.bin:/usr/local/node/bin npm run test"
 				}
             }
 
