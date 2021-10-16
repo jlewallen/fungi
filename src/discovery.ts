@@ -4,6 +4,7 @@ import RNFetchBlob from "react-native-fetch-blob";
 import dgram from "react-native-udp";
 import { Buffer } from "buffer";
 import { fk_app as AppProto } from "fk-app-protocol/fk-app";
+import { ProgressViewIOSComponent } from "react-native";
 
 export class Registration {
     public readonly address: string;
@@ -47,6 +48,7 @@ export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
     private readonly stations: { [index: string]: PersistedStation } = {};
     private zeroconf: Zeroconf = null;
+    private passive = true;
 
     async start(): Promise<void> {
         if (this.zeroconf) {
@@ -96,13 +98,34 @@ export class Discovery extends Emitter {
         const periodicRefresh = () => {
             setTimeout(() => {
                 this.refresh();
-                periodicRefresh();
+                if (!this.passive) {
+                    this.tryQuerying().finally(() => {
+                        periodicRefresh();
+                    });
+                } else {
+                    periodicRefresh();
+                }
             }, 1000);
         };
 
         periodicRefresh();
 
         return Promise.resolve();
+    }
+
+    private shouldQuery(reg: Registration): boolean {
+        if (!reg.queried) {
+            return true;
+        }
+        const now = new Date();
+        const mark = reg.replied || reg.queried;
+        const elapsed = now - mark;
+        return elapsed > 10 * 1000;
+    }
+
+    async tryQuerying(): Promise<void> {
+        const querying = this.getRegistrations().filter((reg) => this.shouldQuery(reg));
+        await Promise.all(querying.map((reg) => this.query(reg.deviceId)));
     }
 
     private refresh(id: string | null = null) {
@@ -156,6 +179,10 @@ export class Discovery extends Emitter {
 
     private getRegistrations(): Registration[] {
         return Object.values(this.services);
+    }
+
+    public setPassive(passive: boolean) {
+        this.passive = passive;
     }
 
     async query(deviceId: string): Promise<void> {

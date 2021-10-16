@@ -253,11 +253,12 @@ const StationListingScreen = ({ navigation }) => {
         backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
     };
 
-    const [isPassive, setIsPassive] = useState<boolean>(true);
+    const [isPassive, setIsPassive] = useState<boolean>(discovery.passive);
     const [registrations, setRegistrations] = useState<Registration[]>([]);
 
     const togglePassive = () => {
         setIsPassive(!isPassive);
+        discovery.setPassive(!isPassive);
     };
 
     React.useEffect(() => {
@@ -279,14 +280,14 @@ const StationListingScreen = ({ navigation }) => {
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
             <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}>
                 <Switch
-                    accessibilityLabel="Passive networking mode."
+                    accessibilityLabel="Query Stations."
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
                     thumbColor={isPassive ? "#f5dd4b" : "#f4f3f4"}
                     ios_backgroundColor="#3e3e3e"
                     onValueChange={togglePassive}
-                    value={isPassive}
+                    value={!isPassive}
                 />
-                <Text style={{ fontWeight: "800" }}>Passive Networking</Text>
+                <Text style={{ fontWeight: "800" }}>Query Stations ({isPassive ? "No" : "Yes"})</Text>
             </HStack>
             <FlatList
                 style={backgroundStyle}
