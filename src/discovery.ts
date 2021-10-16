@@ -1,8 +1,9 @@
 import Zeroconf from 'react-native-zeroconf';
+import RNFetchBlob from 'react-native-fetch-blob';
 
 import dgram from 'react-native-udp';
 import {Buffer} from 'buffer';
-import {fk_app} from 'fk-app-protocol/fk-app';
+import {fk_app as AppProto} from 'fk-app-protocol/fk-app';
 
 export class Registration {
   constructor(
@@ -60,7 +61,7 @@ export class Discovery {
     socket.on('message', (buffer, rinfo) => {
       const addresses = [rinfo.address];
       console.log('udp: message', buffer, addresses);
-      const decoded = fk_app.UdpMessage.decodeDelimited(buffer);
+      const decoded = AppProto.UdpMessage.decodeDelimited(buffer);
       const deviceId = Buffer.from(decoded.deviceId).toString('hex');
       console.log('udp: decoded', decoded);
       this.onUdpFound(deviceId, addresses, 80);
@@ -108,4 +109,38 @@ export class Discovery {
   getServices(): Registration[] {
     return Object.values(this.services);
   }
+
+  async query(name: string): Promise<void> {
+    const service = this.services[name];
+    if (!service) {
+      console.log('querying (MYSTERY)', name);
+      return Promise.resolve();
+    }
+
+    console.log('query-service', service);
+
+    const url = `http://${service.addresses[0]}:${service.port}/fk/v1`;
+
+    console.log('query-url', url);
+
+    RNFetchBlob.fetch('GET', url)
+      .then((res: ResponseType) => {
+        console.log('response', res.info());
+        const status = res.info().status;
+        if (status == 200) {
+          const base64Str = res.base64();
+          const buffer = Buffer.from(base64Str, 'base64');
+          const decoded = AppProto.HttpReply.decodeDelimited(buffer);
+          console.log('query-decoded', decoded);
+        }
+      })
+      .catch((errorMessage: string, statusCode: number) => {
+        console.log(`error-message`, errorMessage);
+        console.log(`error-status`, statusCode);
+      });
+
+    return Promise.resolve();
+  }
 }
+
+type ResponseType = {};
