@@ -14,6 +14,10 @@ timestamps {
                 scmInfo = checkout scm
             }
 
+            stage ('yarn') {
+                sh "yarn install"
+            }
+
             stage ('tests') {
 				def (remote, branch) = scmInfo.GIT_BRANCH.tokenize('/')
 
