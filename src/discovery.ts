@@ -16,15 +16,32 @@ export class Registration {
         public udp: Date | null = null,
         public lost: Date | null = null,
         public queried: Date | null = null,
-        public replied: Date | null = null
+        public replied: Date | null = null,
+        public refreshed: Date | null = null
     ) {
         this.address = this.addresses[0];
+    }
+
+    public clone(): Registration {
+        return new Registration(
+            this.deviceId,
+            this.addresses,
+            this.port,
+            this.zeroconf,
+            this.udp,
+            this.lost,
+            this.queried,
+            this.replied,
+            new Date()
+        );
     }
 }
 
 export class PersistedStation {
     constructor(private readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
 }
+
+type ResponseType = {};
 
 export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
@@ -89,10 +106,24 @@ export class Discovery extends Emitter {
     }
 
     private refresh(id: string | null = null) {
-        this.emit(`registrations`, this.getRegistrations());
+        if (id) {
+            console.log("refresh", "id", id);
+        } else {
+            console.log("refresh");
+        }
+
+        const registrations = this.getRegistrations();
+        this.emit(`registrations`, registrations);
+
+        for (const registration of registrations) {
+            this.emit(`registrations/${registration.deviceId}`, registration);
+        }
+
         if (id) {
             const station = this.stations[id];
-            this.emit(`stations/${id}`, station);
+            if (station) {
+                this.emit(`stations/${id}`, station);
+            }
         }
     }
 
@@ -167,5 +198,3 @@ export class Discovery extends Emitter {
         return Promise.resolve();
     }
 }
-
-type ResponseType = {};

@@ -23,8 +23,9 @@ const discovery = new Discovery();
 
 const RegistrationDetails: React.FC<{
     registration: Registration;
+    showHeader: boolean;
     onPress: (registration: Registration) => void;
-}> = ({ children, registration, onPress }) => {
+}> = ({ children, registration, showHeader, onPress }) => {
     const isDarkMode = useColorScheme() === "dark";
 
     const primaryColor = registration.lost ? "coral" : "darkseagreen";
@@ -57,21 +58,23 @@ const RegistrationDetails: React.FC<{
         );
     };
 
-    sections.push(
-        <Text
-            key={sections.length}
-            onPress={() => onPress(registration)}
-            style={[
-                styles.stationTitle,
-                {
-                    backgroundColor: primaryColor,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                },
-            ]}
-        >
-            {registration.address}
-        </Text>
-    );
+    if (showHeader) {
+        sections.push(
+            <Text
+                key={sections.length}
+                onPress={() => onPress(registration)}
+                style={[
+                    styles.stationTitle,
+                    {
+                        backgroundColor: primaryColor,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                    },
+                ]}
+            >
+                {registration.address}
+            </Text>
+        );
+    }
     if (registration.lost) {
         sections.push(
             <Text
@@ -142,23 +145,41 @@ const StationDetailScreen = ({ route, navigation }) => {
 
     console.log("station-detail-navigation", stationNavigation);
 
+    const [station, setStation] = useState<PersistedStation | null>(null);
+    const [registration, setRegistration] = useState<Registration | null>(null);
+
     React.useEffect(() => {
-        const handler = (station: PersistedStation) => {
+        const refreshStation = (station: PersistedStation) => {
             console.log("station-detail-station", station);
+            setStation(station);
         };
-        const key = `stations/${stationNavigation.deviceId}`;
-        discovery.on(key, handler);
+        const refreshRegistration = (registration: Registration) => {
+            console.log("station-detail-registration", registration);
+            setRegistration(registration.clone());
+        };
+        const stationKey = `stations/${stationNavigation.deviceId}`;
+        const registrationKey = `registrations/${stationNavigation.deviceId}`;
+        discovery.on(stationKey, refreshStation);
+        discovery.on(registrationKey, refreshRegistration);
         return function cleanupListener() {
-            discovery.off(key, handler);
+            discovery.off(stationKey, refreshStation);
+            discovery.off(registrationKey, refreshRegistration);
         };
     });
 
-    return (
-        <View style={{ margin: 20 }}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-            <View style={styles.buttonContainerStyle}>
-                <Button title="Query" onPress={() => discovery.query(stationNavigation.deviceId)} />
+    if (!registration) {
+        return (
+            <View>
+                <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+                <Text style={{ margin: 20 }}>Loading</Text>
             </View>
+        );
+    }
+
+    return (
+        <View>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+            <RegistrationDetails registration={registration} showHeader={false} onPress={console.log} />
             <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}></HStack>
         </View>
     );
@@ -218,7 +239,7 @@ const StationListingScreen = ({ navigation }) => {
                 style={backgroundStyle}
                 data={registrations}
                 keyExtractor={(item) => item.deviceId}
-                renderItem={(row) => <RegistrationDetails onPress={onSelected} registration={row.item}></RegistrationDetails>}
+                renderItem={(row) => <RegistrationDetails onPress={onSelected} registration={row.item} showHeader={true} />}
             />
         </View>
     );
