@@ -51,6 +51,29 @@ export LANG=en_US.UTF-8
 yarn install
 
 cd ios && pod install
+
+security list-keychains
+
+security lock-keychain login.keychain
+
+security unlock-keychain -p "$APP_IOS_KEYCHAIN_PASSWORD" login.keychain
+
+security show-keychain-info login.keychain
+
+cd ios
+
+rm -rf build
+
+mkdir -p build
+
+xcodebuild -workspace Fielded.xcworkspace -scheme Fielded -sdk iphoneos -configuration Release archive -archivePath $PWD/build/Fielded.xcarchive \
+    PROVISIONING_PROFILE="d142f4e9-c1b1-4f90-bf88-abf7a00380e2" \
+    CODE_SIGN_IDENTITY="iPhone Distribution" \
+	CODE_SIGN_STYLE="Manual"
+
+xcodebuild -exportArchive -archivePath $PWD/build/Fielded.xcarchive -exportOptionsPlist exportOptions.plist -exportPath $PWD/build
+
+cd ..
 """
 					}
 				}
