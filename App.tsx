@@ -11,7 +11,7 @@
 import React, {useState} from 'react';
 import {
   SafeAreaView,
-  ScrollView,
+  Switch,
   StatusBar,
   StyleSheet,
   Text,
@@ -19,6 +19,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import {HStack, Checkbox, Center, NativeBaseProvider, Box} from 'native-base';
 
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
@@ -145,7 +146,12 @@ const App = () => {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const [isPassive, setIsPassive] = useState<boolean>(true);
   const [stations, setStations] = useState<Station[]>([]);
+
+  const togglePassive = () => {
+    setIsPassive(!isPassive);
+  };
 
   discovery.start(async services => {
     const stations = services.map(
@@ -157,14 +163,33 @@ const App = () => {
   });
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <FlatList
-        style={backgroundStyle}
-        data={stations}
-        renderItem={row => <StationItem station={row.item}></StationItem>}
-      />
-    </SafeAreaView>
+    <NativeBaseProvider>
+      <SafeAreaView style={backgroundStyle}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <HStack
+          space={6}
+          marginTop={5}
+          marginLeft={5}
+          marginRight={5}
+          style={backgroundStyle}>
+          <Switch
+            trackColor={{false: '#767577', true: '#81b0ff'}}
+            thumbColor={isPassive ? '#f5dd4b' : '#f4f3f4'}
+            accessibilityLabel="Passive networking mode."
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={togglePassive}
+            value={isPassive}
+          />
+          <Text>Passive Networking</Text>
+        </HStack>
+        <FlatList
+          style={backgroundStyle}
+          data={stations}
+          keyExtractor={item => item.id}
+          renderItem={row => <StationItem station={row.item}></StationItem>}
+        />
+      </SafeAreaView>
+    </NativeBaseProvider>
   );
 };
 
