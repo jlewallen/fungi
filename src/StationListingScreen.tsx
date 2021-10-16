@@ -39,7 +39,15 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
     return (
         <View>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-            <View marginTop={5} marginLeft={5} marginRight={5} style={{ flexDirection: "row", ...backgroundStyle }}>
+            <View
+                style={{
+                    margin: 20,
+                    flexDirection: "row",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    ...backgroundStyle,
+                }}
+            >
                 <Switch
                     accessibilityLabel="Query Stations."
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
@@ -48,7 +56,7 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
                     onValueChange={togglePassive}
                     value={!isPassive}
                 />
-                <Text style={{ fontWeight: "800" }}>Query Stations ({isPassive ? "No" : "Yes"})</Text>
+                <Text style={{ marginLeft: 10, fontWeight: "800" }}>Query Stations ({isPassive ? "No" : "Yes"})</Text>
             </View>
             <FlatList
                 style={backgroundStyle}

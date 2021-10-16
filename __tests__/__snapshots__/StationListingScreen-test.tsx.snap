@@ -1,0 +1,78 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders correctly 1`] = `
+<View>
+  <View
+    style={
+      Object {
+        "alignItems": "center",
+        "backgroundColor": "#F3F3F3",
+        "flexDirection": "row",
+        "justifyContent": "flex-start",
+        "margin": 20,
+      }
+    }
+  >
+    <RCTSwitch
+      accessibilityLabel="Query Stations."
+      accessibilityRole="switch"
+      onChange={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      onTintColor="#81b0ff"
+      style={
+        Array [
+          Object {
+            "height": 31,
+            "width": 51,
+          },
+          Object {
+            "backgroundColor": "#3e3e3e",
+            "borderRadius": 16,
+          },
+        ]
+      }
+      thumbTintColor="#f4f3f4"
+      tintColor="#767577"
+      value={true}
+    />
+    <Text
+      style={
+        Object {
+          "fontWeight": "800",
+          "marginLeft": 10,
+        }
+      }
+    >
+      Query Stations (
+      Yes
+      )
+    </Text>
+  </View>
+  <RCTScrollView
+    data={Array []}
+    getItem={[Function]}
+    getItemCount={[Function]}
+    keyExtractor={[Function]}
+    onContentSizeChange={[Function]}
+    onLayout={[Function]}
+    onMomentumScrollBegin={[Function]}
+    onMomentumScrollEnd={[Function]}
+    onScroll={[Function]}
+    onScrollBeginDrag={[Function]}
+    onScrollEndDrag={[Function]}
+    removeClippedSubviews={false}
+    renderItem={[Function]}
+    scrollEventThrottle={50}
+    stickyHeaderIndices={Array []}
+    style={
+      Object {
+        "backgroundColor": "#F3F3F3",
+      }
+    }
+    viewabilityConfigCallbackPairs={Array []}
+  >
+    <View />
+  </RCTScrollView>
+</View>
+`;

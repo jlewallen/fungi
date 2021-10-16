@@ -13,5 +13,13 @@ import { StationDetailScreen } from "../src/StationDetailScreen";
 const fakeDiscovery = new EventEmitter();
 
 it("renders correctly", () => {
-    renderer.create(<StationDetailScreen route={{ params: { station: { deviceId: "device-id" } } }} discovery={fakeDiscovery} />);
+    const root = renderer.create(
+        <StationDetailScreen
+            route={{ params: { station: { deviceId: "device-id" } } }}
+            discovery={fakeDiscovery}
+            navigation={{ navigate: () => console.log("navigate") }}
+        />
+    );
+
+    expect(root.toJSON()).toMatchSnapshot();
 });
