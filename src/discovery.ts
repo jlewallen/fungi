@@ -4,43 +4,8 @@ import RNFetchBlob from "react-native-fetch-blob";
 import dgram from "react-native-udp";
 import { Buffer } from "buffer";
 import { fk_app as AppProto } from "fk-app-protocol/fk-app";
-import { ProgressViewIOSComponent } from "react-native";
 
-export class Registration {
-    public readonly address: string;
-
-    constructor(
-        public readonly deviceId: string,
-        public readonly addresses: string[],
-        public readonly port: number,
-        public zeroconf: Date | null = null,
-        public udp: Date | null = null,
-        public lost: Date | null = null,
-        public queried: Date | null = null,
-        public replied: Date | null = null,
-        public refreshed: Date | null = null
-    ) {
-        this.address = this.addresses[0];
-    }
-
-    public clone(): Registration {
-        return new Registration(
-            this.deviceId,
-            this.addresses,
-            this.port,
-            this.zeroconf,
-            this.udp,
-            this.lost,
-            this.queried,
-            this.replied,
-            new Date()
-        );
-    }
-}
-
-export class PersistedStation {
-    constructor(public readonly reply: AppProto.HttpReply, public readonly registration: Registration) {}
-}
+import { Registration, PersistedStation } from "./types";
 
 type ResponseType = {};
 
@@ -48,7 +13,7 @@ export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
     private readonly stations: { [index: string]: PersistedStation } = {};
     private zeroconf: Zeroconf = null;
-    private passive = true;
+    public passive = true;
 
     async start(): Promise<void> {
         if (this.zeroconf) {
