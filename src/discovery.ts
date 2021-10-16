@@ -1,6 +1,6 @@
+import Emitter from "tiny-emitter";
 import Zeroconf from "react-native-zeroconf";
 import RNFetchBlob from "react-native-fetch-blob";
-
 import dgram from "react-native-udp";
 import { Buffer } from "buffer";
 import { fk_app as AppProto } from "fk-app-protocol/fk-app";
@@ -20,17 +20,15 @@ export class Registration {
 
 type CallbackFunc = (registrations: Registration[]) => Promise<void>;
 
-export class Discovery {
+export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
-    private callback: CallbackFunc = async () => {};
     private zeroconf: Zeroconf = null;
 
-    async start(callback: CallbackFunc): Promise<void> {
+    async start(): Promise<void> {
         if (this.zeroconf) {
             return;
         }
 
-        this.callback = callback;
         this.zeroconf = new Zeroconf();
 
         this.zeroconf.on("start", () => console.log("Zeroconf scan has started."));
@@ -84,7 +82,7 @@ export class Discovery {
     }
 
     refresh() {
-        this.callback(this.getServices());
+        this.emit("stations", this.getServices());
     }
 
     onUdpFound(name: string, addresses: string[], port: number) {

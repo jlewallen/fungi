@@ -11,11 +11,14 @@
 import React, { useState } from "react";
 import { SafeAreaView, Switch, Button, StatusBar, StyleSheet, Text, FlatList, useColorScheme, View } from "react-native";
 import { HStack, Checkbox, Center, NativeBaseProvider, Box } from "native-base";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
 import { Discovery } from "./src/discovery";
 import moment from "moment";
+import { TinyEmitter } from "tiny-emitter";
 
 const discovery = new Discovery();
 
@@ -146,17 +149,18 @@ const StationItem: React.FC<{
     );
 };
 
-const App = () => {
+const Stack = createNativeStackNavigator();
+
+const StationDetailScreen = ({ navigation }) => {
+    return (
+        <View>
+            <Text>Station Detail</Text>
+        </View>
+    );
+};
+
+const StationListingScreen = ({ navigation }) => {
     const isDarkMode = useColorScheme() === "dark";
-
-    const containerStyle = {
-        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-        flex: 1,
-    };
-
-    const backgroundStyle = {
-        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-    };
 
     const [isPassive, setIsPassive] = useState<boolean>(true);
     const [stations, setStations] = useState<Station[]>([]);
@@ -165,36 +169,67 @@ const App = () => {
         setIsPassive(!isPassive);
     };
 
-    discovery.start(async (services) => {
-        const stations = services.map((s) => new Station(s.name, s.addresses, s.port, s.zeroconf, s.udp, s.lost, s.queried, s.replied));
-        console.log("stations:", stations);
-        setStations(stations);
-        return Promise.resolve();
+    const backgroundStyle = {
+        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    };
+
+    React.useEffect(function setupListener() {
+        const handler = (services) => {
+            const stations = services.map((s) => new Station(s.name, s.addresses, s.port, s.zeroconf, s.udp, s.lost, s.queried, s.replied));
+            console.log("stations:", stations);
+            setStations(stations);
+        };
+        discovery.on("stations", handler);
+        return function cleanupListener() {
+            discovery.off("stations", handler);
+        };
     });
 
     return (
-        <NativeBaseProvider>
-            <SafeAreaView style={containerStyle}>
-                <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-                <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}>
-                    <Switch
-                        accessibilityLabel="Passive networking mode."
-                        trackColor={{ false: "#767577", true: "#81b0ff" }}
-                        thumbColor={isPassive ? "#f5dd4b" : "#f4f3f4"}
-                        ios_backgroundColor="#3e3e3e"
-                        onValueChange={togglePassive}
-                        value={isPassive}
-                    />
-                    <Text style={{ fontWeight: "800" }}>Passive Networking</Text>
-                </HStack>
-                <FlatList
-                    style={backgroundStyle}
-                    data={stations}
-                    keyExtractor={(item) => item.id}
-                    renderItem={(row) => <StationItem station={row.item}></StationItem>}
+        <View>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+            <HStack space={6} marginTop={5} marginLeft={5} marginRight={5} style={backgroundStyle}>
+                <Switch
+                    accessibilityLabel="Passive networking mode."
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={isPassive ? "#f5dd4b" : "#f4f3f4"}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={togglePassive}
+                    value={isPassive}
                 />
-            </SafeAreaView>
-        </NativeBaseProvider>
+                <Text style={{ fontWeight: "800" }}>Passive Networking</Text>
+            </HStack>
+            <FlatList
+                style={backgroundStyle}
+                data={stations}
+                keyExtractor={(item) => item.id}
+                renderItem={(row) => <StationItem station={row.item}></StationItem>}
+            />
+        </View>
+    );
+};
+
+const App = () => {
+    const isDarkMode = useColorScheme() === "dark";
+
+    const containerStyle = {
+        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+        flex: 1,
+    };
+
+    discovery.start();
+
+    return (
+        <NavigationContainer>
+            <NativeBaseProvider>
+                <SafeAreaView style={containerStyle}>
+                    <Stack.Navigator>
+                        <Stack.Screen name="Stations" component={StationListingScreen} options={{ title: "Stations" }} />
+                        <Stack.Screen name="Station Detail" component={StationDetailScreen} options={{}} />
+                    </Stack.Navigator>
+                </SafeAreaView>
+            </NativeBaseProvider>
+        </NavigationContainer>
     );
 };
 
