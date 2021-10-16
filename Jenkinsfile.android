@@ -53,6 +53,8 @@ timestamps {
 					sh """
 export PATH=$PATH:node_modules/.bin
 export ANDROID_HOME=`pwd`/android-sdk
+
+cd android && ./gradlew bundleRelease
 """
 				}
             }
@@ -66,7 +68,7 @@ export ANDROID_HOME=`pwd`/android-sdk
 					echo "failed to assign build description: " + e.toString()
 				}
 
-                // archiveArtifacts artifacts: 'platforms/android/app/build/outputs/apk/*/*.apk, platforms/android/app/build/outputs/bundle/*/*.aab'
+                archiveArtifacts artifacts: 'android/app/build/outputs/bundle/*/*.aab'
             }
 
 			refreshDistribution()
