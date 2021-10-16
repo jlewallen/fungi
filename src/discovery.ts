@@ -13,6 +13,8 @@ export class Registration {
     public zeroconf: Date | null = null,
     public udp: Date | null = null,
     public lost: Date | null = null,
+    public queried: Date | null = null,
+    public replied: Date | null = null,
   ) {}
 }
 
@@ -31,20 +33,27 @@ export class Discovery {
 
     this.zeroconf.on('start', () => console.log('Zeroconf scan has started.'));
     this.zeroconf.on('stop', () => console.log('Zeroconf scan has stopped.'));
-    this.zeroconf.on('found', found => console.log('Zeroconf found.', found));
+    this.zeroconf.on('found', (found: unknown) =>
+      console.log('Zeroconf found.', found),
+    );
     this.zeroconf.on('update', () => {
       // console.log('Zeroconf update.');
       callback(this.getServices());
     });
-    this.zeroconf.on('error', error => console.log('Zeroconf error.', error));
+    this.zeroconf.on('error', (error: string) =>
+      console.log('Zeroconf error.', error),
+    );
 
-    this.zeroconf.on('resolved', resolved => {
-      console.log('Zeroconf found.', resolved);
-      this.onZeroConfFound(resolved.name, resolved.addresses, resolved.port);
-      callback(this.getServices());
-    });
+    this.zeroconf.on(
+      'resolved',
+      (resolved: {name: string; addresses: string[]; port: number}) => {
+        console.log('Zeroconf found.', resolved);
+        this.onZeroConfFound(resolved.name, resolved.addresses, resolved.port);
+        callback(this.getServices());
+      },
+    );
 
-    this.zeroconf.on('remove', removed => {
+    this.zeroconf.on('remove', (removed: string) => {
       console.log('Zeroconf remove.', removed);
       this.onServiceLost(removed);
       callback(this.getServices());
@@ -123,8 +132,11 @@ export class Discovery {
 
     console.log('query-url', url);
 
-    RNFetchBlob.fetch('GET', url)
+    service.queried = new Date();
+
+    await RNFetchBlob.fetch('GET', url)
       .then((res: ResponseType) => {
+        service.replied = new Date();
         console.log('response', res.info());
         const status = res.info().status;
         if (status == 200) {
@@ -135,8 +147,7 @@ export class Discovery {
         }
       })
       .catch((errorMessage: string, statusCode: number) => {
-        console.log(`error-message`, errorMessage);
-        console.log(`error-status`, statusCode);
+        console.log(`query-error-`, statusCode, errorMessage);
       });
 
     return Promise.resolve();

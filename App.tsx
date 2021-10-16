@@ -8,7 +8,7 @@
  * @format
  */
 
-import React, { useState } from "react";
+import React, {useState} from 'react';
 import {
   SafeAreaView,
   Switch,
@@ -19,13 +19,13 @@ import {
   FlatList,
   useColorScheme,
   View,
-} from "react-native";
-import { HStack, Checkbox, Center, NativeBaseProvider, Box } from "native-base";
+} from 'react-native';
+import {HStack, Checkbox, Center, NativeBaseProvider, Box} from 'native-base';
 
-import { Colors } from "react-native/Libraries/NewAppScreen";
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-import { Discovery } from "./src/discovery";
-import moment from "moment";
+import {Discovery} from './src/discovery';
+import moment from 'moment';
 
 const discovery = new Discovery();
 
@@ -38,7 +38,9 @@ export class Station {
     public readonly port: number,
     public readonly zeroconf: Date | null,
     public readonly udp: Date | null,
-    public readonly lost: Date | null
+    public readonly lost: Date | null,
+    public readonly queried: Date | null,
+    public readonly replied: Date | null,
   ) {
     this.address = this.addresses[0];
   }
@@ -46,19 +48,34 @@ export class Station {
 
 const StationItem: React.FC<{
   station: Station;
-}> = ({ children, station }) => {
-  const isDarkMode = useColorScheme() === "dark";
+}> = ({children, station}) => {
+  const isDarkMode = useColorScheme() === 'dark';
 
-  const primaryColor = station.lost ? "coral" : "darkseagreen";
+  const primaryColor = station.lost ? 'coral' : 'darkseagreen';
 
   const renderAge = (value: Date | null): string => {
     if (!value) {
-      return "Never";
+      return 'Never';
     }
-    return moment().diff(value, "seconds") + " seconds ago";
+    return moment().diff(value, 'seconds') + ' seconds ago';
   };
 
   const sections = [];
+
+  const pushAgeSection = (label: string, value: Date | null) => {
+    sections.push(
+      <Text
+        key={sections.length}
+        style={[
+          styles.stationSeen,
+          {
+            color: isDarkMode ? Colors.white : Colors.black,
+          },
+        ]}>
+        {label}: {renderAge(value)}
+      </Text>,
+    );
+  };
 
   sections.push(
     <Text
@@ -69,10 +86,9 @@ const StationItem: React.FC<{
           backgroundColor: primaryColor,
           color: isDarkMode ? Colors.white : Colors.black,
         },
-      ]}
-    >
+      ]}>
       {station.address}
-    </Text>
+    </Text>,
   );
   if (station.lost) {
     sections.push(
@@ -83,10 +99,9 @@ const StationItem: React.FC<{
           {
             color: isDarkMode ? Colors.white : Colors.black,
           },
-        ]}
-      >
+        ]}>
         LOST: {renderAge(station.lost)}
-      </Text>
+      </Text>,
     );
   }
   sections.push(
@@ -97,43 +112,19 @@ const StationItem: React.FC<{
         {
           color: isDarkMode ? Colors.white : Colors.black,
         },
-      ]}
-    >
+      ]}>
       {station.id}
-    </Text>
+    </Text>,
   );
-  sections.push(
-    <Text
-      key={sections.length}
-      style={[
-        styles.stationSeen,
-        {
-          color: isDarkMode ? Colors.white : Colors.black,
-        },
-      ]}
-    >
-      ZeroConf: {renderAge(station.zeroconf)}
-    </Text>
-  );
-  sections.push(
-    <Text
-      key={sections.length}
-      style={[
-        styles.stationSeen,
-        {
-          color: isDarkMode ? Colors.white : Colors.black,
-        },
-      ]}
-    >
-      UDP: {renderAge(station.udp)}
-    </Text>
-  );
+  pushAgeSection('ZeroConf', station.zeroconf);
+  pushAgeSection('UDP', station.udp);
+  pushAgeSection('Queried', station.queried);
+  pushAgeSection('Reply', station.replied);
   sections.push(
     <Button
       key={sections.length}
       title="Query"
-      onPress={() => discovery.query(station.id)}
-    ></Button>
+      onPress={() => discovery.query(station.id)}></Button>,
   );
 
   return (
@@ -145,8 +136,7 @@ const StationItem: React.FC<{
           {
             color: isDarkMode ? Colors.light : Colors.dark,
           },
-        ]}
-      >
+        ]}>
         {children}
       </Text>
     </View>
@@ -154,7 +144,7 @@ const StationItem: React.FC<{
 };
 
 const App = () => {
-  const isDarkMode = useColorScheme() === "dark";
+  const isDarkMode = useColorScheme() === 'dark';
 
   const containerStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -172,11 +162,21 @@ const App = () => {
     setIsPassive(!isPassive);
   };
 
-  discovery.start(async (services) => {
+  discovery.start(async services => {
     const stations = services.map(
-      (s) => new Station(s.name, s.addresses, s.port, s.zeroconf, s.udp, s.lost)
+      s =>
+        new Station(
+          s.name,
+          s.addresses,
+          s.port,
+          s.zeroconf,
+          s.udp,
+          s.lost,
+          s.queried,
+          s.replied,
+        ),
     );
-    console.log("stations:", stations);
+    console.log('stations:', stations);
     setStations(stations);
     return Promise.resolve();
   });
@@ -184,29 +184,28 @@ const App = () => {
   return (
     <NativeBaseProvider>
       <SafeAreaView style={containerStyle}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <HStack
           space={6}
           marginTop={5}
           marginLeft={5}
           marginRight={5}
-          style={backgroundStyle}
-        >
+          style={backgroundStyle}>
           <Switch
             accessibilityLabel="Passive networking mode."
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={isPassive ? "#f5dd4b" : "#f4f3f4"}
+            trackColor={{false: '#767577', true: '#81b0ff'}}
+            thumbColor={isPassive ? '#f5dd4b' : '#f4f3f4'}
             ios_backgroundColor="#3e3e3e"
             onValueChange={togglePassive}
             value={isPassive}
           />
-          <Text style={{ fontWeight: "800" }}>Passive Networking</Text>
+          <Text style={{fontWeight: '800'}}>Passive Networking</Text>
         </HStack>
         <FlatList
           style={backgroundStyle}
           data={stations}
-          keyExtractor={(item) => item.id}
-          renderItem={(row) => <StationItem station={row.item}></StationItem>}
+          keyExtractor={item => item.id}
+          renderItem={row => <StationItem station={row.item}></StationItem>}
         />
       </SafeAreaView>
     </NativeBaseProvider>
@@ -220,26 +219,26 @@ const styles = StyleSheet.create({
   },
   stationTitle: {
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: '600',
     padding: 5,
   },
   stationId: {
     marginTop: 8,
     fontSize: 14,
-    fontWeight: "200",
+    fontWeight: '200',
   },
   stationSeen: {
     marginTop: 8,
     fontSize: 18,
-    fontWeight: "400",
+    fontWeight: '400',
   },
   stationDescription: {
     marginTop: 8,
     fontSize: 18,
-    fontWeight: "400",
+    fontWeight: '400',
   },
   highlight: {
-    fontWeight: "700",
+    fontWeight: '700',
   },
 });
 
