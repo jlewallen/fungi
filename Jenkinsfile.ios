@@ -50,7 +50,9 @@ export LANG=en_US.UTF-8
 
 yarn install
 
-cd ios && pod install
+cd ios 
+
+pod install
 
 security list-keychains
 
@@ -59,8 +61,6 @@ security lock-keychain login.keychain
 security unlock-keychain -p "$APP_IOS_KEYCHAIN_PASSWORD" login.keychain
 
 security show-keychain-info login.keychain
-
-cd ios
 
 rm -rf build
 
