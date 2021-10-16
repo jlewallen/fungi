@@ -12,7 +12,7 @@ import moment from "moment";
 
 import React, { useState } from "react";
 import { SafeAreaView, Switch, Button, StatusBar, StyleSheet, Text, FlatList, useColorScheme, View } from "react-native";
-import { HStack, Checkbox, Center, NativeBaseProvider, Box } from "native-base";
+import { HStack, Checkbox, Center, NativeBaseProvider, Box, ScrollView } from "native-base";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Colors } from "react-native/Libraries/NewAppScreen";
@@ -22,12 +22,40 @@ import { Discovery, PersistedStation, Registration } from "./src/discovery";
 const discovery = new Discovery();
 
 const StationInspection: React.FC<{ station: PersistedStation }> = ({ children, station }) => {
+    console.log("modules", station.reply.modules);
+    console.log("live-readings", station.reply.liveReadings);
     return (
-        <View style={{ paddingHorizontal: 24 }}>
+        <ScrollView style={{ paddingHorizontal: 24 }}>
             <Text>Name: {station.reply.status?.identity?.name}</Text>
             <Text>Uptime: {station.reply.status?.uptime}</Text>
-            <Text>Firmware: {station.reply.status?.firmware?.version}</Text>
             <Text>Battery: {station.reply.status?.power?.battery?.voltage}</Text>
+            {station.reply.liveReadings.map((lr, lrIndex) => {
+                return lr.modules.map((mod, modIndex) => {
+                    return (
+                        <View key={modIndex} style={{ marginBottom: 5, marginTop: 5 }}>
+                            <Text style={{ fontSize: 18, fontWeight: "800" }}>{mod.module?.name}</Text>
+                            {mod.readings?.map((reading, readingIndex) => {
+                                return (
+                                    <View
+                                        key={readingIndex}
+                                        style={{
+                                            flexDirection: "row",
+                                            display: "flex",
+                                            justifyContent: "space-evenly",
+                                        }}
+                                    >
+                                        <Text style={{ fontWeight: "600" }}>{reading.sensor?.name}</Text>
+                                        <Text>{reading.uncalibrated?.toFixed(3)}</Text>
+                                        <Text>{reading.factory?.toFixed(3)}</Text>
+                                        <Text>{reading.value?.toFixed(3)}</Text>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    );
+                });
+            })}
+            <Text>Firmware: {station.reply.status?.firmware?.version}</Text>
             <Text>Solar: {station.reply.status?.power?.solar?.voltage}</Text>
             <Text>GPS: {station.reply.status?.gps?.fix}</Text>
             <Text>Latitude: {station.reply.status?.gps?.latitude}</Text>
@@ -41,7 +69,7 @@ const StationInspection: React.FC<{ station: PersistedStation }> = ({ children, 
                     </View>
                 );
             })}
-        </View>
+        </ScrollView>
     );
 };
 
@@ -202,7 +230,7 @@ const StationDetailScreen = ({ route, navigation }) => {
     }
 
     return (
-        <View>
+        <View style={{ flex: 1 }}>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
             <RegistrationDetails registration={registration} showHeader={false} onPress={console.log} />
             {station && <StationInspection station={station} />}
