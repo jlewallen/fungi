@@ -169,13 +169,29 @@ export class Discovery extends Emitter {
 
         const url = `http://${service.address}:${service.port}/fk/v1`;
 
-        console.log("query-url", url);
+        // console.log("query-url", url);
+
+        const query = AppProto.HttpQuery.create({
+            type: AppProto.QueryType.QUERY_TAKE_READINGS,
+        });
+        const encoded = AppProto.HttpQuery.encodeDelimited(query as AppProto.IHttpQuery).finish();
+        // console.log("query-encoded", encoded);
+
+        const body = Buffer.from(encoded).toString("base64");
+        // console.log("query-body", body);
 
         service.queried = new Date();
 
         this.refresh(deviceId);
 
-        await RNFetchBlob.fetch("GET", url)
+        await RNFetchBlob.fetch(
+            "POST",
+            url,
+            {
+                "Content-Type": "application/octet-stream",
+            },
+            body
+        )
             .then((res: ResponseType) => {
                 service.replied = new Date();
                 console.log("response", res.info());
