@@ -88,7 +88,7 @@ cd ..
 					echo "failed to assign build description: " + e.toString()
 				}
 
-                // archiveArtifacts artifacts: 'platforms/ios/build/Debug-iphoneos/*.ipa, platforms/ios/build/Release-iphoneos/*.ipa'
+                archiveArtifacts artifacts: 'ios/build/*.ipa'
             }
 
 			refreshDistribution()
