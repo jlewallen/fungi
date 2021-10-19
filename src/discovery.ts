@@ -9,10 +9,25 @@ import { Registration, PersistedStation } from "./types";
 
 type ResponseType = {};
 
+enum HistoryEntryType {
+    ZeroConfFound,
+    ZeroConfLost,
+    UdpMessage,
+    Query,
+}
+
+class HistoryEntry {
+    public readonly time = new Date();
+
+    constructor(public readonly deviceId: string, public readonly type: HistoryEntryType) {}
+}
+
 export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
     private readonly stations: { [index: string]: PersistedStation } = {};
+    private readonly history: HistoryEntry[] = [];
     private zeroconf: Zeroconf = null;
+
     public passive = true;
 
     async start(): Promise<void> {
@@ -115,6 +130,10 @@ export class Discovery extends Emitter {
         }
     }
 
+    private record(deviceId: string, type: HistoryEntryType): void {
+        this.history.push(new HistoryEntry(deviceId, type));
+    }
+
     private onUdpFound(deviceId: string, addresses: string[], port: number) {
         console.log("onUdpFound", deviceId, addresses, port);
         if (!this.services[deviceId]) {
@@ -122,6 +141,7 @@ export class Discovery extends Emitter {
         }
         this.services[deviceId].udp = new Date();
         this.services[deviceId].lost = null;
+        this.record(deviceId, HistoryEntryType.UdpMessage);
     }
 
     private onZeroConfFound(deviceId: string, addresses: string[], port: number) {
@@ -131,6 +151,7 @@ export class Discovery extends Emitter {
         }
         this.services[deviceId].zeroconf = new Date();
         this.services[deviceId].lost = null;
+        this.record(deviceId, HistoryEntryType.ZeroConfFound);
     }
 
     private onServiceLost(deviceId: string) {
@@ -140,6 +161,7 @@ export class Discovery extends Emitter {
         } else {
             console.log("onServiceLost (MYSTERY)", deviceId);
         }
+        this.record(deviceId, HistoryEntryType.ZeroConfLost);
     }
 
     private getRegistrations(): Registration[] {
@@ -151,6 +173,8 @@ export class Discovery extends Emitter {
     }
 
     async query(deviceId: string): Promise<void> {
+        this.record(deviceId, HistoryEntryType.Query);
+
         const service = this.services[deviceId];
         if (!service) {
             console.log("querying (MYSTERY)", deviceId);
