@@ -1,3 +1,4 @@
+import _ from "lodash";
 import Emitter from "tiny-emitter";
 import Zeroconf from "react-native-zeroconf";
 import RNFetchBlob from "react-native-blob-util";
@@ -9,23 +10,29 @@ import { Registration, PersistedStation } from "./types";
 
 type ResponseType = {};
 
-enum HistoryEntryType {
+type CallbackType<T> = (value: T) => void;
+
+export enum HistoryEntryType {
     ZeroConfFound,
     ZeroConfLost,
     UdpMessage,
     Query,
 }
 
-class HistoryEntry {
+export class HistoryEntry {
     public readonly time = new Date();
 
     constructor(public readonly deviceId: string, public readonly type: HistoryEntryType) {}
+
+    public get key(): string {
+        return this.time.toISOString();
+    }
 }
 
 export class Discovery extends Emitter {
     private readonly services: { [index: string]: Registration } = {};
     private readonly stations: { [index: string]: PersistedStation } = {};
-    private readonly history: HistoryEntry[] = [];
+    private history: HistoryEntry[] = [];
     private zeroconf: Zeroconf = null;
 
     public passive = true;
@@ -108,13 +115,12 @@ export class Discovery extends Emitter {
         await Promise.all(querying.map((reg) => this.query(reg.deviceId)));
     }
 
-    private refresh(id: string | null = null) {
-        if (id) {
-            console.log("refresh", "id", id);
-        } else {
-            console.log("refresh");
-        }
+    private refreshHistory() {
+        console.log(this.history.map((h) => h.type));
+        this.emit("history", _.clone(this.history)); // New instance required
+    }
 
+    private refresh(id: string | null = null) {
         const registrations = this.getRegistrations();
         this.emit(`registrations`, registrations);
 
@@ -130,8 +136,29 @@ export class Discovery extends Emitter {
         }
     }
 
+    public subscribe<T>(path: string, callback: CallbackType<T>): () => void {
+        console.log(`discovery: subscribe-on ${path}`);
+
+        this.on(path, callback);
+
+        if (path == "history") {
+            this.refreshHistory();
+        }
+
+        if (path == "registrations") {
+            this.emit(`registrations`, this.getRegistrations());
+        }
+
+        return () => {
+            console.log(`discovery: subscribe-off ${path}`);
+            this.off(path, callback);
+        };
+    }
+
     private record(deviceId: string, type: HistoryEntryType): void {
-        this.history.push(new HistoryEntry(deviceId, type));
+        const entry = new HistoryEntry(deviceId, type);
+        this.history = [entry, ...this.history];
+        this.refreshHistory();
     }
 
     private onUdpFound(deviceId: string, addresses: string[], port: number) {

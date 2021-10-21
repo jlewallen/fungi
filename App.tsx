@@ -1,10 +1,4 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * Generated with the TypeScript template
- * https://github.com/react-native-community/react-native-template-typescript
- *
  * @format
  */
 
@@ -19,6 +13,7 @@ import { Discovery } from "./src/discovery";
 
 import { StationListingScreen } from "./src/StationListingScreen";
 import { StationDetailScreen } from "./src/StationDetailScreen";
+import { HistoryScreen } from "./src/HistoryScreen";
 
 const discovery = new Discovery();
 
@@ -44,6 +39,9 @@ const App = () => {
                         </Stack.Screen>
                         <Stack.Screen name="StationDetail" options={({ route }) => ({ title: route.params.station.name })}>
                             {(props) => <StationDetailScreen discovery={discovery} {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name="History" options={({ route }) => ({ title: "History" })}>
+                            {(props) => <HistoryScreen discovery={discovery} {...props} />}
                         </Stack.Screen>
                     </Stack.Navigator>
                 </SafeAreaView>

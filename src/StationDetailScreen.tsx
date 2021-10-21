@@ -75,25 +75,24 @@ export const StationDetailScreen = ({ discovery, navigation, route }: { discover
     const [station, setStation] = useState<PersistedStation | null>(null);
     const [registration, setRegistration] = useState<Registration | null>(null);
 
-    React.useEffect(() => {
-        const refreshStation = (station: PersistedStation) => {
-            console.log("station-detail-station", station);
-            console.log("station-detail-station", station.reply.status);
-            setStation(station);
-        };
-        const refreshRegistration = (registration: Registration) => {
-            console.log("station-detail-registration", registration);
-            setRegistration(registration.clone());
-        };
-        const stationKey = `stations/${stationNavigation.deviceId}`;
-        const registrationKey = `registrations/${stationNavigation.deviceId}`;
-        discovery.on(stationKey, refreshStation);
-        discovery.on(registrationKey, refreshRegistration);
-        return function cleanupListener() {
-            discovery.off(stationKey, refreshStation);
-            discovery.off(registrationKey, refreshRegistration);
-        };
-    });
+    React.useEffect(
+        () =>
+            discovery.subscribe(`stations/${stationNavigation.deviceId}`, (station: PersistedStation) => {
+                console.log("station-detail-station", station);
+                console.log("station-detail-station", station.reply.status);
+                setStation(station);
+            }),
+        [stationNavigation.deviceId]
+    );
+
+    React.useEffect(
+        () =>
+            discovery.subscribe(`registrations/${stationNavigation.deviceId}`, (registration: Registration) => {
+                console.log("station-detail-registration", registration);
+                setRegistration(registration.clone());
+            }),
+        [stationNavigation.deviceId]
+    );
 
     if (!registration) {
         return (

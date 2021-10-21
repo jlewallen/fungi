@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Switch, StatusBar, StyleSheet, Text, FlatList, useColorScheme, View } from "react-native";
+import { StyleSheet, StatusBar, Button, Text, FlatList, useColorScheme, View, Switch } from "react-native";
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
 import { Discovery } from "./discovery";
@@ -22,18 +22,14 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
         discovery.setPassive(!isPassive);
     };
 
-    React.useEffect(() => {
-        const handler = (registrations: Registration[]) => {
-            setRegistrations(registrations);
-        };
-        discovery.on("registrations", handler);
-        return function cleanupListener() {
-            discovery.off("registrations", handler);
-        };
-    });
+    React.useEffect(() => discovery.subscribe("registrations", (registrations: Registration[]) => setRegistrations(registrations)), []);
 
     const onSelected = (registration: Registration) => {
         navigation.navigate("StationDetail", { station: StationNavigation.fromRegistration(registration) });
+    };
+
+    const onHistory = () => {
+        navigation.navigate("History");
     };
 
     return (
@@ -57,6 +53,14 @@ export const StationListingScreen = ({ discovery, navigation }: { discovery: Dis
                     value={!isPassive}
                 />
                 <Text style={{ marginLeft: 10, fontWeight: "800" }}>Query Stations ({isPassive ? "No" : "Yes"})</Text>
+            </View>
+            <View
+                style={{
+                    margin: 20,
+                    ...backgroundStyle,
+                }}
+            >
+                <Button title="History" onPress={() => onHistory()} />
             </View>
             <FlatList
                 style={backgroundStyle}
